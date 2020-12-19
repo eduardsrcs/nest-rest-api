@@ -146,6 +146,8 @@ export class ProductsController {
 
 post request will give...
 
+### Put, delete...
+
 ```
 touch src/products/dto/update-product.dto.ts
 ```
@@ -158,4 +160,88 @@ export class UpdateProductDto {
 ```
 
 [time 32:10](https://www.youtube.com/watch?v=abdgy72csaA&t=1930s)
+
+update `src/products/products.controller.ts`
+
+```typescript
+import { Controller, Delete, Get, Param, Post, Put, Body } from '@nestjs/common';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+
+@Controller('products')
+export class ProductsController {
+
+  @Get()
+  getAll(): string {
+    return 'getAll'
+  }
+
+  @Get(':id')
+  getOne(@Param('id') id:string): string {
+    return 'getOne ' + id
+  }
+
+  @Post()
+  create(@Body() createProductDto: CreateProductDto): string {
+    return `Title: ${createProductDto.title}, price: ${createProductDto.price}`
+  }
+
+  @Put(':id')
+  update(@Body() updateProductDto: UpdateProductDto, @Param('id') id: string) {
+    return 'Update ' + id
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string): string {
+    return 'Remove ' + id
+  }
+}
+
+```
+
+### Make redirect
+
+```typescript
+@Get()
+@Redirect('https://google.com', 301)
+getAll(): string {
+  return 'getAll'
+}
+```
+
+this will redirect /products to google.
+
+### Make status code
+
+```typescript
+@HttpCode(HttpStatus.CREATED)
+```
+
+### Set Headers
+
+```typescript
+@Header('Cache-control', 'none')
+```
+
+### Manual response
+
+```typescript
+@Get()
+getAll(@Req() req: Request, @Res() res: Response): string {
+  res.status(201).end('Poke')
+  return 'getAll'
+}
+```
+
+Writing logics in controller is not good idea, so, we need to create service.
+
+## Create service
+
+```sh
+nest g s products
+```
+
+CREATE src/products/products.service.spec.ts (474 bytes)
+CREATE src/products/products.service.ts (92 bytes)
+UPDATE src/app.module.ts (418 bytes)
 
