@@ -245,3 +245,203 @@ CREATE src/products/products.service.spec.ts (474 bytes)
 CREATE src/products/products.service.ts (92 bytes)
 UPDATE src/app.module.ts (418 bytes)
 
+This class should be registered as provider in `src/app.module.ts`
+
+```typescript
+providers: [AppService, ProductsService],
+```
+
+Service makes all the logic of our app.
+
+`src/products/products.service.ts`
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { CreateProductDto } from './dto/create-product.dto';
+
+@Injectable()
+export class ProductsService {
+  private products = []
+
+  getAll() {
+    return this.products
+  }
+
+  getById(id: string) {
+    return this.products.find(p => p.id === id)
+  }
+
+  create(productDto: CreateProductDto) {
+    this.products.push({
+      ...productDto,
+      id: Date.now().toString()
+    })
+  }
+}
+
+```
+
+then, inject this service in **ProductsController**:
+
+```typescript
+constructor(private readonly productsService: ProductsService) {
+
+}
+
+@Get()
+// @Redirect('https://google.com', 301)
+getAll() {
+  return this.productsService.getAll()
+}
+
+@Get(':id')
+getOne(@Param('id') id:string) {
+  return this.productsService.getById(id)
+}
+
+@Post()
+// @HttpCode(201)
+@HttpCode(HttpStatus.CREATED)
+@Header('Cache-control', 'none')
+create(@Body() createProductDto: CreateProductDto) {
+  // return `Title: ${createProductDto.title}, price: ${createProductDto.price}`
+  return this.productsService.create(createProductDto)
+}
+```
+
+Now, if we send POST to /products with this data:
+
+```json
+{"title": "New title 3", "body": "New body for 3th element"}
+```
+
+and then GET to the same link, we'll see that this item is created:
+
+```json
+[
+    {
+        "title": "Put",
+        "price": 59,
+        "id": "1608394019391"
+    }
+]
+```
+
+## Modules in Nest
+
+```sh
+touch src/products/products.module.ts
+```
+
+```typescript
+import { Module } from '@nestjs/common'
+import { ProductsController } from './products.controller';
+import { ProductsService } from './products.service';
+
+@Module({
+  providers: [ProductsService],
+  controllers: [ProductsController]
+})
+
+export class ProductsModule {
+
+}
+```
+
+From **AppModule** we can remove:
+
+```typescript
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+// import { ProductsController } from './products/products.controller';
+// import { ProductsService } from './products/products.service';
+
+@Module({
+  imports: [],
+  controllers: [AppController/*, ProductsController */],
+  providers: [AppService/*, ProductsService*/],
+})
+export class AppModule {}
+```
+
+[time 50:00](https://www.youtube.com/watch?v=abdgy72csaA&t=3000s)
+
+`src/app.module.ts`
+
+```typescript
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { ProductsModule } from './products/products.module'
+
+@Module({
+  imports: [ProductsModule],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+```
+
+## Connect MongoDB
+
+Will use mongodb cloud. go to [mongodb.com](mongodb.com), select shared cluster.
+
+### Install mongo
+
+[from nest docs](https://docs.nestjs.com/techniques/mongodb)
+
+```sh
+npm install --save @nestjs/mongoose mongoose
+npm install --save-dev @types/mongoose
+```
+
+It is important to include mongo in app.module. Add MongooseModule into imports.
+
+```
+
+```
+
+then connect to cluster, select ip, then connect, choose connect your application, get url and insert it into `app.module.ts` Type **password** and **dbname**
+
+### Creating schemas
+
+```sh
+mkdir src/products/schemas
+touch src/products/schemas/product.schema.ts
+```
+
+```typescript
+// import { Schema } from "mongoose";
+
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
+import { Document } from 'mongoose'
+
+export type ProductDocument = Product & Document
+
+@Schema()
+export class Product {
+  @Prop()
+  title: string
+
+  @Prop()
+  price: number
+}
+
+export const ProductSchema = SchemaFactory.createForClass(Product)
+```
+
+Register this schema in `src/products/products.module.ts`:
+
+```typescript
+imports: [
+  MongooseModule.forFeature([
+    {name: Product.name, schema: ProductSchema}
+  ])
+]
+```
+
+in `src/products/products.service.ts`
+
+time 1:08
+
